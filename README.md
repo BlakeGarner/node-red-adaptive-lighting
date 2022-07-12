@@ -1,4 +1,4 @@
-# H1 Adaptive Lighting for Node RED
+# Adaptive Lighting for Node RED
 
 Works with Node-RED to provide adaptive lighting - i.e. lighting that adjusts
 over time - for your automations.
