@@ -1,0 +1,209 @@
+<script type="text/javascript">
+    RED.nodes.registerType('adaptive lighting',{
+        category: 'function',
+        color: '#FDF0C2',
+        defaults: {
+            name: {value:""}
+        },
+        inputs:1,
+        outputs:1,
+        icon: "font-awesome/fa-moon-o",
+        label: function() {
+            return this.name||"adaptive lighting";
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="adaptive lighting">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+</script>
+
+<script type="text/html" data-help-name="adaptive lighting">
+    <p>Regularly updates the parameters sent to a lighting device depending on sun position and/or time.</p>
+    <p>Takes the location, system time and a set of lighting parameter keyframes as inputs, to then calculate and
+        regularly update the lighting levels for that moment. Intended specifically to use with 
+        node-red-contrib-home-assistant-websocket's <code>call service</code> node.
+    </p>
+    <h3>Inputs</h3>
+        <dl class="message-properties">
+            <dt>payload.service
+                <span class="property-type">string</span>
+            </dt>
+            <dd> the service or comamnd for the light. <code>"light_on"</code>, <code>"on"</code> and 
+                <code>true</code> will activate the adaptive lighting for this node, adding brightness and colour info
+                as applicable, passing all other message properties unchanged, and repeating the message over time to
+                adjust the brightness and colour parameters. <code>"light_off"</code>, 
+                <code>"off"</code> and <code>false</code> will deactivate any adaptive lighting for the node, passing
+                the message through unaltered. Any other values will maintain the adaptive lighting state (on or off)
+                and merely pass through this message unaltered.
+            </dd>
+            <dt>location
+                <span class="property-type">JSON</span>
+            </dt>
+            <dd> the coordinates of the location, used to calculate sun events. Should contain keys 
+                <code>latitude</code> and <code>longitude</code>. For example:
+                <pre><code>{
+    "latitude": -31.95,
+    "longitude": 115.86
+}</code></pre>
+                for 31.95° S, 115.8° E.
+                Required for any messages with a service of <code>"light_on"</code>, <code>"on"</code> or 
+                <code>true</code>
+            </dd>
+            <dt>now
+                <span class="property-type">string</span>
+            </dt>
+            <dd> the time to use, if different from current system time. Can be useful for testing, or if system time
+                is incorrect. Must be provided in the ISO 8601 format of yyyy-mm-ddThh:mm:ss.sssZ.
+                For example: <code>"2020-05-24:20:53:30.000+0800"</code> is 8:53:30pm on 24 May 2020 (+8hrs GMT).
+            </dd>
+            <dt>
+                fades
+                <span class="property-type">JSON</span>
+            </dt>
+            <dd> the 'key-frames' that describe the start/stop fade times throughout a given day. The JSON should open
+                with an array. Each array element is a JSON object that describes a single keyframe. For example:
+                <pre><code>{
+    [
+        {
+            "time": "dawn",
+            "brightness": 30,
+            "color_temp": 450
+        },
+        {
+            "time": "dawn",
+            "offset_mins": 60,
+            "brightness": 180,
+            "color_temp": 300
+        },
+        {
+            "time": "17:00",
+            "brightness": 180,
+            "color_temp": 300
+        },
+        {
+            "time": "17:30",
+            "brightness": 30,
+            "color_temp": 450
+        }
+    ]
+}</code></pre>
+                The example above will fade its brightness from 30 to 180 (out of 255) and its color_temp from 450 to 
+                300 mireds between dawn and 60 minutes after dawn. It will then hold that level until 5:00pm, when it
+                will fade back down to a brightness of 30 and color_temp of 450 mireds over 30 minutes (to 5:30pm). It
+                will then hold that level until the next day's dawn when the process will repeat. Note that levels are
+                kept static by including the same entry twice between the two times required.
+                Only the time key is required in each entry, although at least one brightness or colour entry must
+                be included.
+                Recognised keys within each JSON object are:
+                <ul>
+                    <li><b>time</b> [string]<br/>
+                        The time in the form "hh:mm" (24 hour) or of a particular sun event:
+                        <ul>
+                            <li><code>hh:mm</code> - a time in 24-hour format</li>
+                            <li><code>sunrise</code> - top edge of sun appears on the horizon</li>
+                            <li><code>sunriseEnd</code> - bottom edge of sun touches the horizon</li>
+                            <li><code>goldenHourEnd</code> - morning golden hour ends</li>
+                            <li><code>solarNoon</code> - sun is in the highest position</li>
+                            <li><code>goldenHour</code> - evening golden hour starts</li>
+                            <li><code>sunsetStart</code> - bottom edge of sun touches the horizon</li>
+                            <li><code>sunset</code> - top edge of sun disappears below the horizon</li>
+                            <li><code>dusk</code> - evening nautical twilight starts</li>
+                            <li><code>nauticalDusk</code> - evening astronomical twilight starts</li>
+                            <li><code>night</code> - dark enough for astronomical observations</li>
+                            <li><code>nadir</code> - darkest moment of the night, sun is in the lowest position</li>
+                            <li><code>nightEnd</code> - morning astronomical twilight starts</li>
+                            <li><code>nauticalDawn</code> - morning nautical twilight starts</li>
+                            <li><code>dawn</code> - morning civil twilight starts</li>
+                        </ul>
+                    </li>
+                    <li><b>offset_mins</b> [number]<br/>
+                        An offset to apply (in minutes) to the time provided above. May be positive or negative.
+
+                    </li>
+                    <li>
+                        <b>brightness</b> [number]<br/>
+                        The desired brightness, in the range 0 to 255.
+                    </li>
+                    <li>
+                        <b>brightness_pct</b> [number]<br/>
+                        The desired brightness, in the range 0 to 100.
+                    </li>
+                    <li>
+                        <b>color_temp</b> [number]<br/>
+                        The desired colour temperature (in mireds), in the range 150 to 500.
+                    </li>
+                    <li>
+                        <b>kelvin</b> [number]<br/>
+                        The desired colour temperature (in kelvin), in the range 2000 to 6500.
+                    </li>
+                    <li>
+                        <b>rgb_color</b> [array of numbers]<br/>
+                        An array of length three, containing the red, green and blue values, in the range 0 to 255.
+                    </li>
+                    <li>
+                        <b>rgbw_color</b> [array of numbers]<br/>
+                        An array of length four, containing the red, green, blue and white values, in the range 0 to
+                        255.
+                    </li>
+                    <li>
+                        <b>rgbww_color</b> [array of numbers]<br/>
+                        An array of length five, containing the red, green, blue, cool white and warm white values, in
+                        the range 0 to 255.
+                    </li>
+                    <li>
+                        <b>hs_color</b> [array of numbers]<br/>
+                        An array of length two, containing the hue and saturation, in the range 0 to 360 and 0 to 100
+                        respectively.
+                    </li>
+                    <li>
+                        <b>xy_color</b> [array of numbers]<br/>
+                        An array of length two, containing the x and y CIE1931 colour coordinates, in the range 0.0 to
+                        1.0.
+                    </li>
+                </ul>
+            </dd>
+            <dt>alx_enabled
+                <span class="property-type">boolean</span>
+            </dt>
+            <dd> enable or disable the adaptive lighting functionality. When disabled, messages are passed through
+                without modification, the fades object of keyframes is ignored and no recurring messages are sent.
+            </dd>
+            <dt>topic
+                <span class="property-type">strsing</span>
+            </dt>
+            <dd> messages on the same topic will override existing instance initiated on the same topic. Parallel
+                adaptive processes can be maintained by using multiple topics (for example, a different topic
+                for each entity that's used). Note that alx_enabled will apply only to the matching topic. To disable
+                all adaptive lighting, <code>msg.alx_enabled=false</code> must be sent multiple times for each topic
+                in use.
+            </dd>
+        </dl>
+    <h3>Outputs</h3>
+        <dl class="message-properties">
+            <dt>msg 
+                <span class="property-type">JSON</span>
+            </dt>
+            <dd>
+                The input msg object will be sent straight to the output, unaltered except (potentially) the 
+                <code>msg.data</code> field, as described below. If enabled, and if a valid service msg was sent (see
+                msg.service and msg.alx_enabled in Inputs above), recurring messages will be sent to adjust the
+                lighting over time. These recurring messages are a clone of the original message, again with only
+                <code>msg.data</code> adjusted as applicable.
+
+            </dd>
+            <dt>payload.data
+                <span class="property-type">JSON</span>
+            </dt>
+            <dd>
+                Entries such as "brightness", "color_temp", etc. will be added (or will replace existing), containing
+                the intermediate level described in <code>msg.fades</code>. Note that only attributes that exist in both
+                the most recent preceding and most recent future <code>msg.fades</code> entries will be added.
+                In addition, the default transition time will be added in all recurring messages (it will be 
+                unchanged/unset in the initial or pass-through message).
+            </dd>
+        </dl>
+</script>

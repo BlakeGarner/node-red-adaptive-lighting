@@ -1,0 +1,26 @@
+{
+  "name": "@blakegarner/red-contrib-adaptive-lighting",
+  "version": "1.0.0",
+  "description": "Adaptive Lighting node (for use with Home Assistant)",
+  "main": "adaptive-lighting.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Blake Garner",
+  "license": "Apache-2.0",
+  "node-red": {
+    "nodes": {
+      "adaptive lighting": "adaptive-lighting.js"
+    }
+  },
+  "dependencies": {
+    "lodash": "^4.17.21",
+    "suncalc": "^1.9.0"
+  },
+  "keywords": [
+    "node-red",
+    "Home-Assistant",
+    "Adaptive-Lighting",
+    "Cicadian-Lighting"
+  ]
+}
