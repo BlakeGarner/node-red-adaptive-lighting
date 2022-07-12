@@ -1,6 +1,6 @@
 {
   "name": "@blakegarner/node-red-adaptive-lighting",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Adaptive Lighting node (for use with Home Assistant)",
   "main": "adaptive-lighting.js",
   "scripts": {
