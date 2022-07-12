@@ -1,5 +1,5 @@
 {
-  "name": "@blakegarner/red-contrib-adaptive-lighting",
+  "name": "@blakegarner/node-red-adaptive-lighting",
   "version": "1.0.0",
   "description": "Adaptive Lighting node (for use with Home Assistant)",
   "main": "adaptive-lighting.js",
@@ -22,5 +22,14 @@
     "Home-Assistant",
     "Adaptive-Lighting",
     "Cicadian-Lighting"
-  ]
+  ],
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BlakeGarner/node-red-adaptive-lighting.git"
+  },
+  "bugs": {
+    "url": "https://github.com/BlakeGarner/node-red-adaptive-lighting/issues"
+  },
+  "homepage": "https://github.com/BlakeGarner/node-red-adaptive-lighting#readme"
 }
